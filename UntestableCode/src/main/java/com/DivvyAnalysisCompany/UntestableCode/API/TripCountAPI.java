@@ -4,8 +4,10 @@ import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateRequ
 import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.net.URI;
 import java.util.Date;
 
@@ -13,7 +15,15 @@ import java.util.Date;
 public class TripCountAPI {
 
     @GetMapping(path="/TripsByStationPairDate", consumes="application/json")
-    ResponseEntity<TripsByStationPairDateResponse> GetTripsByStationPairDate(@RequestBody TripsByStationPairDateRequest request) {
+    ResponseEntity<Object> GetTripsByStationPairDate(
+            @Valid @RequestBody TripsByStationPairDateRequest request, Errors errors) {
+        if (errors.hasErrors()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+        //call db
+        //Station Validation
+        //Retrieve 
+        //form response
         TripsByStationPairDateResponse response = TripsByStationPairDateResponse.builder()
                 .sourceStation(request.sourceStation)
                 .destinationStation(request.destinationStation)
