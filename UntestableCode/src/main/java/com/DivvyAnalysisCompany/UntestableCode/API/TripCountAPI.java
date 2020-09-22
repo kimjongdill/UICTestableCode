@@ -1,5 +1,6 @@
 package com.DivvyAnalysisCompany.UntestableCode.API;
 
+import com.DivvyAnalysisCompany.UntestableCode.DataProvider.StationDataProvider;
 import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateRequest;
 import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateResponse;
 import org.springframework.http.HttpStatus;
@@ -18,16 +19,30 @@ public class TripCountAPI {
     ResponseEntity<Object> GetTripsByStationPairDate(
             @Valid @RequestBody TripsByStationPairDateRequest request, Errors errors) {
         if (errors.hasErrors()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors.getAllErrors());
         }
-        //call db
-        //Station Validation
-        //Retrieve 
-        //form response
+
+        // Validate Station Identifiers
+        StationDataProvider sdp = new StationDataProvider();
+
+        if(!sdp.isValidStation(request.sourceStation)) {
+            String responseMessage = String.format("Invalid station %s", request.sourceStation);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseMessage);
+        }
+        if(!sdp.isValidStation(request.destinationStation)) {
+            String responseMessage = String.format("Invalid station %s", request.destinationStation);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseMessage);
+        }
+
+        // Get the Trip Count
+        Integer tripCount = sdp.getTripsByStationPairAndDate(request.sourceStation,
+                request.destinationStation,
+                request.date);
+
         TripsByStationPairDateResponse response = TripsByStationPairDateResponse.builder()
                 .sourceStation(request.sourceStation)
                 .destinationStation(request.destinationStation)
-                .numberOfTrips(999)
+                .numberOfTrips(tripCount)
                 .date(request.date)
                 .build();
 
