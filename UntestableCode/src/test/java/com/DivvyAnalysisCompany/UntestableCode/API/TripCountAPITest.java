@@ -9,10 +9,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.DivvyAnalysisCompany.UntestableCode.DataProvider.StationDataProvider;
 import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateRequest;
 import com.DivvyAnalysisCompany.UntestableCode.Models.TripsByStationPairDateResponse;
+import com.DivvyAnalysisCompany.UntestableCode.API.TripCountAPI;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,11 +23,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
+
 
 @RunWith(SpringRunner.class)
 @WebMvcTest(TripCountAPI.class)
@@ -36,13 +39,15 @@ public class TripCountAPITest {
     @MockBean
     private StationDataProvider sdp;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
 
-    private TripsByStationPairDateRequest makeRequest(String source, String dest, Date date) {
+
+    private ObjectMapper objectMapper = new ObjectMapper().setDateFormat(new StdDateFormat().withColonInTimeZone(true));
+
+    private TripsByStationPairDateRequest makeRequest(String source, String dest, LocalDate date) {
         return  TripsByStationPairDateRequest.builder()
                 .sourceStation(source)
                 .destinationStation(dest)
-                .date(date)
+                .date(Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()))
                 .build();
     }
 
@@ -60,7 +65,7 @@ public class TripCountAPITest {
 
         String source = "aaaaa";
         String destination = "bbbbb";
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
 
         Integer numTrips = 1;
 
@@ -81,10 +86,34 @@ public class TripCountAPITest {
     }
 
     @Test
+    public void tripCountAPI_BackendDown_Returns500() throws Exception {
+
+        String source = "aaaaa";
+        String destination = "bbbbb";
+        LocalDate date = LocalDate.now();
+
+        Integer numTrips = 1;
+
+        TripsByStationPairDateRequest request = makeRequest(source, destination, date);
+        TripsByStationPairDateResponse response = makeResponse(request, numTrips);
+
+        String jsonRequest = objectMapper.writeValueAsString(request);
+        String jsonResponse = objectMapper.writeValueAsString(response);
+
+        when(sdp.isValidStation(anyString())).thenThrow(new SQLException());
+        when(sdp.getTripsByStationPairAndDate(anyString(), anyString(), any())).thenReturn(numTrips);
+
+        mockMvc.perform(get("/TripsByStationPairDate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+
+    }
+
+    @Test
     public void tripCountAPI_InvalidStation_Returns400() throws Exception {
         String source = "";
         String destination = "aaaaa";
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
         Integer numTrips = 0;
 
         TripsByStationPairDateRequest request = makeRequest(source, destination, date);
@@ -92,7 +121,7 @@ public class TripCountAPITest {
         String jsonRequest = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(get("/TripsByStationPairDate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
     }
@@ -101,7 +130,7 @@ public class TripCountAPITest {
     public void tripCountAPI_StationNotFound_Returns404() throws Exception {
         String source = "aaaaa";
         String destination = "bbbbb";
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
 
         when(sdp.isValidStation(source)).thenReturn(false);
 
@@ -110,7 +139,8 @@ public class TripCountAPITest {
         String jsonRequest = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(get("/TripsByStationPairDate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
     }
 
@@ -118,14 +148,14 @@ public class TripCountAPITest {
     public void tripCountAPI_InvalidDateInFuture_Returns400() throws Exception {
         String source = "bbbbb";
         String destination = "aaaaa";
-        LocalDateTime date = LocalDateTime.now().plusDays(1);
+        LocalDate date = LocalDate.now().plusDays(1);
 
-        TripsByStationPairDateRequest request = makeRequest(source, destination, java.sql.Timestamp.valueOf(date));
+        TripsByStationPairDateRequest request = makeRequest(source, destination, date);
 
         String jsonRequest = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(get("/TripsByStationPairDate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
     }
@@ -134,14 +164,15 @@ public class TripCountAPITest {
     public void tripCountAPI_InvalidDateInPast_Returns400() throws Exception {
         String source = "bbbbb";
         String destination = "aaaaa";
-        Date date = new GregorianCalendar(2012, 1, 1).getTime();
+        LocalDate date = TripCountAPI.launchDate.minusDays(1);
 
         TripsByStationPairDateRequest request = makeRequest(source, destination, date);
 
         String jsonRequest = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(get("/TripsByStationPairDate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
     }
 }

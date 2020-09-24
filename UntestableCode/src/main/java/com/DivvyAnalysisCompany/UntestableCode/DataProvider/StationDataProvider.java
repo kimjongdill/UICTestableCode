@@ -1,11 +1,16 @@
 package com.DivvyAnalysisCompany.UntestableCode.DataProvider;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
 import java.security.InvalidParameterException;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+@Component("StationDataProvider")
 public class StationDataProvider {
     private final Set<String> _stations = new HashSet<String>() {{
         add("AAAAA");
@@ -16,13 +21,13 @@ public class StationDataProvider {
 
     private final Random _generator = new Random();
 
-    public Boolean isValidStation(String station) {
+    public Boolean isValidStation(String station) throws SQLException {
         return _stations.contains(station.toUpperCase());
     }
 
     public Integer getTripsByStationPairAndDate(String sourceStation,
                                                 String destinationStation,
-                                                Date date) {
+                                                Date date) throws SQLException {
         if(!(isValidStation(sourceStation) && isValidStation(destinationStation))){
             throw new InvalidParameterException();
         }

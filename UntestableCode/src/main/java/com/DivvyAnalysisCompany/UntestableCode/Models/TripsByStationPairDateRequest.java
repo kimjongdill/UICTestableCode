@@ -2,6 +2,7 @@ package com.DivvyAnalysisCompany.UntestableCode.Models;
 
 import lombok.Builder;
 import lombok.Data;
+
 import java.util.Date;
 import javax.validation.constraints.*;
 
