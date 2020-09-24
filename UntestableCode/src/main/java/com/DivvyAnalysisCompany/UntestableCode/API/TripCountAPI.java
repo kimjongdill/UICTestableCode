@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
 @RestController
 public class TripCountAPI {
@@ -20,6 +21,10 @@ public class TripCountAPI {
             @Valid @RequestBody TripsByStationPairDateRequest request, Errors errors) {
         if (errors.hasErrors()){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors.getAllErrors());
+        }
+
+        if (request.date.before(new GregorianCalendar(2013, 06, 28).getTime())){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{ error: Invalid date before service start date");
         }
 
         // Validate Station Identifiers
