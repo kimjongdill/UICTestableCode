@@ -30,45 +30,47 @@ public class TripCountAPI {
     @GetMapping(path="/TripsByStationPairDate", consumes="application/json")
     ResponseEntity<Object> GetTripsByStationPairDate(
             @Valid @RequestBody TripsByStationPairDateRequest request, Errors errors) {
-        if (errors.hasErrors()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errors.getAllErrors());
-        }
 
-        if (request.date.before(Date.from(launchDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body("error: Invalid date before service start date");
-        }
-
-        Integer tripCount = 0;
-
-        try {
-            if(!_stationDataProvider.isValidStation(request.sourceStation)) {
-                String responseMessage = String.format("Invalid station %s", request.sourceStation);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(responseMessage);
-            }
-            if(!_stationDataProvider.isValidStation(request.destinationStation)) {
-                String responseMessage = String.format("Invalid station %s", request.destinationStation);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(responseMessage);
-            }
-
-            // Get the Trip Count
-            tripCount = _stationDataProvider.getTripsByStationPairAndDate(request.sourceStation,
-                    request.destinationStation,
-                    request.date);
-        } catch (SQLException e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("error: the database is down");
-        }
-
-
-        TripsByStationPairDateResponse response = TripsByStationPairDateResponse.builder()
-                .sourceStation(request.sourceStation)
-                .destinationStation(request.destinationStation)
-                .numberOfTrips(tripCount)
-                .date(request.date)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body(response);
+//        if (errors.hasErrors()){
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errors.getAllErrors());
+//        }
+//
+//        if (request.date.before(Date.from(launchDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))){
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body("error: Invalid date before service start date");
+//        }
+//
+//        Integer tripCount = 0;
+//
+//        try {
+//            if(!_stationDataProvider.isValidStation(request.sourceStation)) {
+//                String responseMessage = String.format("Invalid station %s", request.sourceStation);
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(responseMessage);
+//            }
+//            if(!_stationDataProvider.isValidStation(request.destinationStation)) {
+//                String responseMessage = String.format("Invalid station %s", request.destinationStation);
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(responseMessage);
+//            }
+//
+//            // Get the Trip Count
+//            tripCount = _stationDataProvider.getTripsByStationPairAndDate(request.sourceStation,
+//                    request.destinationStation,
+//                    request.date);
+//        } catch (SQLException e) {
+//            return ResponseEntity
+//                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .contentType(MediaType.APPLICATION_JSON)
+//                    .body("error: the database is down");
+//        }
+//
+//
+//        TripsByStationPairDateResponse response = TripsByStationPairDateResponse.builder()
+//                .sourceStation(request.sourceStation)
+//                .destinationStation(request.destinationStation)
+//                .numberOfTrips(tripCount)
+//                .date(request.date)
+//                .build();
+//
+//        return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body(response);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("not implemented");
     }
 }
